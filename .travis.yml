@@ -25,18 +25,18 @@ addons:
 matrix:
   include:
     - compiler: gcc
-      env: EXTRA_CFLAGS='-std=gnu99'
+      env: CFLAGS='-std=gnu99'
     - compiler: gcc-6
-      env: EXTRA_CFLAGS='-std=gnu11'
+      env: CFLAGS='-std=gnu11'
     - compiler: clang
-      env: EXTRA_CFLAGS='-std=gnu11'
+      env: CFLAGS='-std=gnu11'
 
 script:
-  - $CC -dM -E - < /dev/null | grep STD
   - mkdir build
   - cd build
   - cmake -DCMAKE_BUILD_TYPE=Debug ..
   - cmake --build .
+  - ./std_check
 
 after_success:
   # coverity

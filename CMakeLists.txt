@@ -7,6 +7,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wstrict-prototypes -pedantic"
 
 add_executable(simple_message_client src/simple_message_client.c)
 add_executable(simple_message_server src/simple_message_server.c)
+add_executable(std_check src/std_check.c)
 
 if(DOXYGEN_FOUND)
     add_custom_target(doc
