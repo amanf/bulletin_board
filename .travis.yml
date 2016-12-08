@@ -1,0 +1,38 @@
+env:
+  global:
+    - secure: "PIrh7jRXrW3wC0RJQgAhy5OPVOBh3LxHnZY+xVHKtqIdtq8yAqh9NSfYhyWeKBbQ31rwb3bm/bgxGJRwIAhWr5uSeb9hmJkeGmoi5Q19u/eZfLDlJfABwAVKb7a7gxyoD6YglcrV1mekDmXzN8DPW5m3Xk0yagwq0/D4KYRWvkX3oTnhs+Qda/zXahVUXftxIMyjnDOxgY6EJjvmabtCWOyaJplukP19ZUs/nUXE5DKNnbxDr3uy5oi3K7Zrl7ueRUPZzTcFMUJm8o3PxsYcZmYeiR/aXhl981rqhW4xBJjDhpO1wnTShmQAaqcuaFaow5K6cPGPOlEvgjh047K+v1BpluuZ5+CNGo3s23q07hSfbNeR0zZvWZ+/DNSjd4mxU1MyIRAD6Ip/BQ3YdGHbglnm0n6BdaDqJe4dpqkx3/eSd7LvbEb8r/RYu6O8taAK0IhsKmnYD0wAUyzHw8Qjm0uZ3gLDgXaFN0lQx6UcFB0n4rcMCr2GQUo1Vrp6t5SxT0eUzr7fWyUtkkTX/QB2bnLnctnwMbJfHtbH3Uh/BGUHhfkSrd11+0tHMko7ZeahACVhgKFitUERflxNz6YOBrGR8uf5iYESqp0YgYa2DXY4gqx7JC/yNb0mY+RvLLuN/tHrfOZ2dBMCgA6MpDsThr/529pOoHyYmyxdh1mYSvw="
+    - COVERITY_SCAN_PROJECT_NAME="amq/bulletin_board"
+    - COVERITY_SCAN_NOTIFICATION_EMAIL="amq@users.noreply.github.com"
+    - COVERITY_SCAN_BUILD_COMMAND_PREPEND="mkdir coverity_build; cd coverity_build; cmake .."
+    - COVERITY_SCAN_BUILD_COMMAND="cmake --build ."
+    - COVERITY_SCAN_BRANCH_PATTERN="coverity_scan"
+
+language: c
+compiler:
+  - gcc
+  - gcc-6
+  - clang
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test # gcc
+      - llvm-toolchain-precise-3.8 # clang
+      - george-edison55-precise-backports
+    packages:
+      - gcc-6
+      - clang
+      - cmake
+      - cmake-data
+
+script:
+  - mkdir build
+  - cd build
+  - cmake -DCMAKE_BUILD_TYPE=Debug ..
+  - cmake --build .
+
+after_success:
+  # coverity
+  - cd $TRAVIS_BUILD_DIR
+  - if ([ "$CC" == "gcc" ] && [ "$TRAVIS_BRANCH" == "coverity_scan" ]); then
+      curl -s "https://scan.coverity.com/scripts/travisci_build_coverity_scan.sh" | bash || true;
+    fi
