@@ -3,7 +3,7 @@ project(bulletin_board C)
 
 find_package(Doxygen)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Wall -Wextra -Wstrict-prototypes -pedantic")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wstrict-prototypes -pedantic")
 
 add_executable(simple_message_client src/simple_message_client.c)
 add_executable(simple_message_server src/simple_message_server.c)

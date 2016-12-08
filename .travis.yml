@@ -1,3 +1,6 @@
+language: c
+sudo: false
+
 env:
   global:
     - secure: "PIrh7jRXrW3wC0RJQgAhy5OPVOBh3LxHnZY+xVHKtqIdtq8yAqh9NSfYhyWeKBbQ31rwb3bm/bgxGJRwIAhWr5uSeb9hmJkeGmoi5Q19u/eZfLDlJfABwAVKb7a7gxyoD6YglcrV1mekDmXzN8DPW5m3Xk0yagwq0/D4KYRWvkX3oTnhs+Qda/zXahVUXftxIMyjnDOxgY6EJjvmabtCWOyaJplukP19ZUs/nUXE5DKNnbxDr3uy5oi3K7Zrl7ueRUPZzTcFMUJm8o3PxsYcZmYeiR/aXhl981rqhW4xBJjDhpO1wnTShmQAaqcuaFaow5K6cPGPOlEvgjh047K+v1BpluuZ5+CNGo3s23q07hSfbNeR0zZvWZ+/DNSjd4mxU1MyIRAD6Ip/BQ3YdGHbglnm0n6BdaDqJe4dpqkx3/eSd7LvbEb8r/RYu6O8taAK0IhsKmnYD0wAUyzHw8Qjm0uZ3gLDgXaFN0lQx6UcFB0n4rcMCr2GQUo1Vrp6t5SxT0eUzr7fWyUtkkTX/QB2bnLnctnwMbJfHtbH3Uh/BGUHhfkSrd11+0tHMko7ZeahACVhgKFitUERflxNz6YOBrGR8uf5iYESqp0YgYa2DXY4gqx7JC/yNb0mY+RvLLuN/tHrfOZ2dBMCgA6MpDsThr/529pOoHyYmyxdh1mYSvw="
@@ -7,11 +10,6 @@ env:
     - COVERITY_SCAN_BUILD_COMMAND="cmake --build ."
     - COVERITY_SCAN_BRANCH_PATTERN="coverity_scan"
 
-language: c
-compiler:
-  - gcc
-  - gcc-6
-  - clang
 addons:
   apt:
     sources:
@@ -23,6 +21,15 @@ addons:
       - clang
       - cmake
       - cmake-data
+
+matrix:
+  include:
+    - compiler: gcc
+      env: EXTRA_CFLAGS='-std=gnu99'
+    - compiler: gcc-6
+      env: EXTRA_CFLAGS='-std=gnu11'
+    - compiler: clang
+      env: EXTRA_CFLAGS='-std=gnu11'
 
 script:
   - mkdir build
