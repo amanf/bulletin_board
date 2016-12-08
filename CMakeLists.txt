@@ -9,6 +9,8 @@ add_executable(simple_message_client src/simple_message_client.c)
 add_executable(simple_message_server src/simple_message_server.c)
 add_executable(std_check src/std_check.c)
 
+target_link_libraries(simple_message_client lib/libsimple_message_client_commandline_handling.a)
+
 if(DOXYGEN_FOUND)
     add_custom_target(doc
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
