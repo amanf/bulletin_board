@@ -5,11 +5,31 @@ find_package(Doxygen)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wstrict-prototypes -pedantic")
 
+include_directories(lib/libsimple_message_client_commandline_handling)
+include_directories(lib/simple_message_server_logic)
+
+add_custom_target(
+    libsimple_message_client_commandline_handling
+    COMMAND make
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/lib/libsimple_message_client_commandline_handling
+)
+
+add_custom_target(
+    simple_message_server_logic
+    COMMAND make
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/lib/simple_message_server_logic
+)
+
 add_executable(simple_message_client src/simple_message_client.c)
 add_executable(simple_message_server src/simple_message_server.c)
-add_executable(std_check src/std_check.c)
 
-target_link_libraries(simple_message_client lib/libsimple_message_client_commandline_handling.a)
+add_dependencies(simple_message_client libsimple_message_client_commandline_handling)
+add_dependencies(simple_message_server simple_message_server_logic)
+
+target_link_libraries(
+    simple_message_client
+    ${CMAKE_SOURCE_DIR}/lib/libsimple_message_client_commandline_handling/libsimple_message_client_commandline_handling.a
+)
 
 if(DOXYGEN_FOUND)
     add_custom_target(doc
