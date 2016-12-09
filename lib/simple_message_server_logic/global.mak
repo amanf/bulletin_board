@@ -44,7 +44,7 @@ LN := ln -s
 # uninitialized variables
 CFLAGSBASE := -DDEBUG -Wall -Wextra -Wstrict-prototypes -fno-common -g -O3
 CFLAGS90 := $(CFLAGSBASE) -pedantic
-CFLAGS11 := -pedantic -std=gnu11 $(CFLAGSBASE)
+CFLAGS11 := -pedantic $(CFLAGSBASE)
 LFLAGS := -L .
 
 EXCLUDE_PATTERN := footrulewidth
