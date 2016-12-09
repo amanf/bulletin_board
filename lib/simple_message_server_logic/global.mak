@@ -42,7 +42,7 @@ LN := ln -s
 
 # -O3 will enable further warnings like warnings w.r.t. use of
 # uninitialized variables
-CFLAGSBASE := -DDEBUG -Wall -Wextra -Wstrict-prototypes -fno-common -g -O3
+CFLAGSBASE := $(CFLAGS) -DDEBUG -Wall -Wextra -Wstrict-prototypes -fno-common -g -O3
 CFLAGS90 := $(CFLAGSBASE) -pedantic
 CFLAGS11 := -pedantic $(CFLAGSBASE)
 LFLAGS := -L .
