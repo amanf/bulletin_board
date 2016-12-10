@@ -71,9 +71,9 @@ static int parse_params(int argc, char *argv[], char *port[]) {
     case 'p':
       errno = 0;
       port_num = strtol(optarg, &notconv, 10);
-      if (errno != 0 ||             /* over-/underflow */
-          *notconv != '\0' ||       /* invalid characters */
-          port_num < 1 ||           /* port number out of range */
+      if (errno != 0 ||       /* over-/underflow */
+          *notconv != '\0' || /* invalid characters */
+          port_num < 1 ||     /* port number out of range */
           port_num > 65535) {
         warnx("Invalid port number");
         return -1;
@@ -113,9 +113,9 @@ static int init_sock(char *port) {
 
   /* get the address info */
   memset(&hints, 0, sizeof hints);
-  hints.ai_family = AF_INET;        /* IPv4 */
-  hints.ai_socktype = SOCK_STREAM;  /* TCP */
-  hints.ai_flags = AI_PASSIVE;      /* Wildcard IP */
+  hints.ai_family = AF_INET;       /* IPv4 */
+  hints.ai_socktype = SOCK_STREAM; /* TCP */
+  hints.ai_flags = AI_PASSIVE;     /* Wildcard IP */
 
   if (getaddrinfo(NULL, port, &hints, &info) != 0) {
     warn("getaddrinfo");
@@ -190,8 +190,8 @@ static int accept_connections(int sock) {
   }
 
   while (1) {
-    if((accept_sock = accept(sock, (struct sockaddr *)&addr, &addr_size)) == -1) {
-      if(errno == EAGAIN || errno == EWOULDBLOCK) {
+    if ((accept_sock = accept(sock, (struct sockaddr *)&addr, &addr_size)) == -1) {
+      if (errno == EAGAIN || errno == EWOULDBLOCK) {
         continue;
       } else {
         warn("accept");
@@ -216,6 +216,7 @@ static int accept_connections(int sock) {
         warn("dup2");
         _exit(EXIT_FAILURE);
       }
+      close(accept_sock);
       if (execl("/usr/local/bin/simple_message_server_logic", "simple_message_server_logic", NULL) == -1) {
         warn("execl");
         _exit(EXIT_FAILURE);
