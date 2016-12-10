@@ -8,6 +8,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#define SERVER_LOGIC_PATH "/usr/local/bin/simple_message_server_logic"
+
 static int parse_params(int argc, char *argv[], char *port[]);
 static int init_sock(char *port);
 static int accept_connections(int sock);
@@ -41,9 +43,7 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  close(sock);
-
-  return EXIT_SUCCESS;
+  /* not reached */
 }
 
 /**
@@ -112,7 +112,7 @@ static int init_sock(char *port) {
   const int reuseaddr = 1;
 
   /* get the address info */
-  memset(&hints, 0, sizeof hints);
+  memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_INET;       /* IPv4 */
   hints.ai_socktype = SOCK_STREAM; /* TCP */
   hints.ai_flags = AI_PASSIVE;     /* Wildcard IP */
@@ -209,18 +209,18 @@ static int accept_connections(int sock) {
     case 0: /* child */
       close(sock);
       if (dup2(accept_sock, STDIN_FILENO) == -1) {
-        warn("dup2");
+        warn("dup2 in");
         _exit(EXIT_FAILURE);
       }
       if (dup2(accept_sock, STDOUT_FILENO) == -1) {
-        warn("dup2");
+        warn("dup2 out");
         _exit(EXIT_FAILURE);
       }
       close(accept_sock);
-      if (execl("/usr/local/bin/simple_message_server_logic", "simple_message_server_logic", NULL) == -1) {
-        warn("execl");
-        _exit(EXIT_FAILURE);
-      }
+      execl(SERVER_LOGIC_PATH, "", NULL);
+      /* reached only if execl() failed */
+      warn("execl");
+      _exit(EXIT_FAILURE);
 
     default: /* parent */
       close(accept_sock);
@@ -228,7 +228,7 @@ static int accept_connections(int sock) {
     }
   }
 
-  return 0;
+  /* not reached */
 }
 
 /**
