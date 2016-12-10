@@ -325,6 +325,8 @@ static void assert_files_closed(
             exit(EXIT_FAILURE);
         }
     }
+
+    (void) fprintf(stderr, "Test 2 passed\n");
 }
 
 /**
@@ -1575,6 +1577,8 @@ int main(
 	{
             (void) fprintf(stderr, "Sorry, argv[0] not set\n");
             exit(EXIT_FAILURE);
+        } else {
+            (void) fprintf(stderr, "Test 1 passed\n");
         }
     }
     
