@@ -113,7 +113,7 @@ static int connection(const char *server, const char *port) {
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_UNSPEC;     /* IPv4 and IPv6 */
   hints.ai_socktype = SOCK_STREAM; /* TCP */
-  hints.ai_flags = AI_ADDRCONFIG;  /* Only use families present on system */
+  hints.ai_flags = AI_ADDRCONFIG;  /* Only use families present locally */
 
   if (getaddrinfo(server, port, &hints, &info) != 0) {
     warn("getaddrinfo");
@@ -258,19 +258,23 @@ static int response(FILE *read_fd) {
 
     case 3: /* write the file */
       counter += read;
-      if (fputs(line, fp) == EOF) {
-        warn("fputs");
+      if (counter > file_len) {
+        warnx("File bigger than expected");
+        break;
+      }
+      if (fwrite(line, sizeof(char), (size_t)read, fp) != (size_t)read) {
+        warn("fwrite");
         break;
       }
       v("Written: %ld of %ld\n", counter, file_len);
-      if (counter >= file_len) {
-        if (fflush(fp) == EOF) {
-          warn("fflush");
+      if (counter == file_len) {
+        stage = 1;
+        counter = 0;
+        if (fclose(fp) == EOF) {
+          warn("fclose");
+          fp = NULL;
           break;
         }
-        stage = 1; /* read next file */
-        counter = 0;
-        fclose(fp);
         fp = NULL;
       }
       continue;
@@ -285,7 +289,9 @@ static int response(FILE *read_fd) {
   }
 
   if (fp != NULL) {
-    fclose(fp);
+    if (fclose(fp) == EOF) {
+      warn("fclose");
+    }
   }
 
   if (line != NULL) {
