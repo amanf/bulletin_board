@@ -70,11 +70,17 @@ int main(int argc, const char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  status = response(read_fd);
+  if ((status = response(read_fd)) == -1) {
+    /* error is printed by response() */
+    fclose(write_fd);
+    fclose(read_fd);
+    return EXIT_FAILURE;
+  }
 
   fclose(write_fd);
   fclose(read_fd);
 
+  v("Terminating normally with status %d\n", status);
   return status;
 }
 
@@ -158,14 +164,12 @@ static int connection(const char *server, const char *port) {
 static int request(FILE *write_fd, int sock, const char *user, const char *message, const char *img_url) {
 
   /* img_url is optional */
-  if (img_url == NULL) {
-    img_url = "";
-  }
+  img_url = (img_url != NULL) ? img_url : "";
 
   /* prefixes */
   const char *user_p = "user=";
-  const char *img_url_p = img_url[0] ? "\nimg=" : "";
   const char *message_p = "\n";
+  const char *img_url_p = (img_url[0] != '\0') ? "\nimg=" : "";
 
   size_t length = strlen(user_p) + strlen(img_url_p) + strlen(message_p) + \
                   strlen(user) + strlen(img_url) + strlen(message) + 1;
@@ -178,7 +182,7 @@ static int request(FILE *write_fd, int sock, const char *user, const char *messa
   }
 
   snprintf(request, length, "%s%s%s%s%s%s", user_p, user, img_url_p, img_url, message_p, message);
-  v("Request: %s\n", request);
+  v("Request:\n%s\n", request);
 
   if (fprintf(write_fd, "%s", request) < 0) {
     warn("fprintf");
@@ -208,17 +212,17 @@ static int request(FILE *write_fd, int sock, const char *user, const char *messa
  *
  * @param read_fd the stream descriptor
  *
- * @returns the status from the server or 1 in case of error
+ * @returns the status from the server or -1 in case of error
  */
 static int response(FILE *read_fd) {
   char *line = NULL;
   ssize_t read = -1;
   size_t len = 0;
   int stage = 0;
-  long status = 1;
+  long status = -1;
   char file_name[NAME_MAX] = {0};
   long file_len = 0;
-  int counter = 0;
+  long counter = 0;
   FILE *fp = NULL;
 
   while ((read = getline(&line, &len, read_fd)) != -1) {
@@ -248,7 +252,7 @@ static int response(FILE *read_fd) {
       if ((fp = fopen(file_name, "w+")) == NULL) {
         break;
       }
-      v("File len: %ld\n", file_len);
+      v("Len: %ld\n", file_len);
       stage++;
       continue;
 
@@ -258,7 +262,7 @@ static int response(FILE *read_fd) {
         warn("fputs");
         break;
       }
-      v("Written: %d of %ld\n", counter, file_len);
+      v("Written: %ld of %ld\n", counter, file_len);
       if (counter >= file_len) {
         if (fflush(fp) == EOF) {
           warn("fflush");
@@ -276,6 +280,7 @@ static int response(FILE *read_fd) {
     }
 
     warnx("Could not process the server response");
+    status = -1;
     break;
   }
 
