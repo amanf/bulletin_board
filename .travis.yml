@@ -29,7 +29,7 @@ matrix:
     - compiler: gcc-6
       env: CFLAGS='-std=gnu11'
     - compiler: clang
-      env: CFLAGS='-std=gnu11'
+      env: CFLAGS='-std=gnu11 -Weverything'
 
 script:
   - mkdir build
