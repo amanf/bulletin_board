@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 static int parse_params(int argc, char *argv[], char *port[]) {
   int opt;
   long port_num;
-  char *notconv = "";
+  char *notconv;
 
   if (argc < 2) {
     warnx("Arguments missing");

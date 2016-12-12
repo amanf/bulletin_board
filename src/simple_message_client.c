@@ -54,6 +54,7 @@ int main(int argc, const char *argv[]) {
 
   if ((write_fd = fdopen(sock, "w")) == NULL) {
     warn("fdopen w");
+    close(sock);
     return EXIT_FAILURE;
   }
 
@@ -65,6 +66,7 @@ int main(int argc, const char *argv[]) {
 
   if ((read_fd = fdopen(sock, "r")) == NULL) {
     warn("fdopen r");
+    fclose(write_fd);
     return EXIT_FAILURE;
   }
 
@@ -161,9 +163,9 @@ static int request(FILE *write_fd, int sock, const char *user, const char *messa
   }
 
   /* prefixes */
-  char *user_p = "user=";
-  char *img_url_p = img_url[0] ? "\nimg=" : "";
-  char *message_p = "\n";
+  const char *user_p = "user=";
+  const char *img_url_p = img_url[0] ? "\nimg=" : "";
+  const char *message_p = "\n";
 
   size_t length = strlen(user_p) + strlen(img_url_p) + strlen(message_p) + \
                   strlen(user) + strlen(img_url) + strlen(message) + 1;
