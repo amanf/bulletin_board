@@ -337,7 +337,8 @@ static int response(FILE *read_fd) {
  *
  * @param line the string to parse
  * @param key the key to search for
- * @param result the value of the key
+ * @param result where to store the value of the key
+ * @param result_len the length of the result buffer
  *
  * @returns 0 if everything went well or -1 in case of error
  */
@@ -369,7 +370,7 @@ static int parse_string(char *line, const char *key, char *result, const size_t 
  *
  * @param line the string to parse
  * @param key the key to search for
- * @param result the value of the key
+ * @param result where to store the value of the key
  *
  * @returns 0 if everything went well or -1 in case of error
  */
