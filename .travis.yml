@@ -29,7 +29,7 @@ matrix:
     - compiler: gcc-6
       env: CFLAGS='-std=gnu11'
     - compiler: clang
-      env: CFLAGS='-std=gnu11 -Weverything'
+      env: CFLAGS='-std=gnu11 -Weverything -coverage'
 
 script:
   - mkdir build
@@ -39,7 +39,9 @@ script:
 
 after_success:
   # codecov
-  - bash <(curl -s https://codecov.io/bash)
+  - if [ "$CC" == "clang" ]; then
+      bash <(curl -s https://codecov.io/bash)
+    fi
   # coverity
   - cd $TRAVIS_BUILD_DIR
   - if ([ "$CC" == "gcc" ] && [ "$TRAVIS_BRANCH" == "coverity_scan" ]); then
