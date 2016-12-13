@@ -43,7 +43,9 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  /* not reached */
+  close(sock);
+
+  return 0;
 }
 
 /**
@@ -228,7 +230,7 @@ static int accept_connections(int sock) {
     }
   }
 
-  /* not reached */
+  return 0;
 }
 
 /**
