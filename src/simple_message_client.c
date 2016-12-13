@@ -15,13 +15,15 @@
   if (verbose)                                                                                               \
     fprintf(stderr, "%s(): " fmt, __func__, __VA_ARGS__);
 
+typedef enum { GET_STATUS, GET_FILE, GET_LEN, GET_DATA } parsing;
+
 static int verbose = 0;
 
 static void usage(FILE *stream, const char *cmd, int code);
 static int connection(const char *server, const char *port);
 static int request(FILE *write_fd, int sock, const char *user, const char *message, const char *img_url);
 static int response(FILE *read_fd);
-static int parse_string(char *line, const char *key, char *result);
+static int parse_string(char *line, const char *key, char *result, const size_t result_len);
 static int parse_long(char *line, const char *key, long *result);
 
 /**
@@ -40,9 +42,9 @@ int main(int argc, const char *argv[]) {
   const char *message = NULL;
   const char *img_url = NULL;
   int sock = -1;
+  int status = 1;
   FILE *write_fd = NULL;
   FILE *read_fd = NULL;
-  int status = 1;
 
   smc_parsecommandline(argc, argv, usagefunc, &server, &port, &user, &message, &img_url, &verbose);
   v("server: %s, port: %s, user: %s, message: %s, img_url: %s\n", server, port, user, message, img_url);
@@ -135,7 +137,7 @@ static int connection(const char *server, const char *port) {
       continue;
     } else {
       v("%s\n", "Connected");
-      break; /* success */
+      break;
     }
   }
 
@@ -171,8 +173,8 @@ static int request(FILE *write_fd, int sock, const char *user, const char *messa
   const char *message_p = "\n";
   const char *img_url_p = (img_url[0] != '\0') ? "\nimg=" : "";
 
-  size_t length = strlen(user_p) + strlen(img_url_p) + strlen(message_p) + \
-                  strlen(user) + strlen(img_url) + strlen(message) + 1;
+  size_t length = strlen(user_p) + strlen(img_url_p) + strlen(message_p) + strlen(user) + strlen(img_url) +
+                  strlen(message) + 1;
 
   char *request = calloc(length, sizeof(char));
 
@@ -215,61 +217,73 @@ static int request(FILE *write_fd, int sock, const char *user, const char *messa
  * @returns the status from the server or -1 in case of error
  */
 static int response(FILE *read_fd) {
+  parsing stage = GET_STATUS;
   char *line = NULL;
-  ssize_t read = -1;
-  size_t len = 0;
-  int stage = 0;
+  char file_name[NAME_MAX];
   long status = -1;
-  char file_name[NAME_MAX] = {0};
   long file_len = 0;
   long counter = 0;
+  ssize_t read = -1;
+  size_t len = 0;
   FILE *fp = NULL;
 
   while ((read = getline(&line, &len, read_fd)) != -1) {
 
     switch (stage) {
 
-    case 0: /* get the status */
+    case GET_STATUS: {
       if (parse_long(line, "status", &status) == -1) {
         break;
       }
+
       v("Status: %ld\n", status);
       stage++;
       continue;
+    }
 
-    case 1: /* get the file name */
-      if (parse_string(line, "file", file_name) == -1) {
+    case GET_FILE: {
+      if (parse_string(line, "file", file_name, NAME_MAX) == -1) {
         break;
       }
+
       v("File: %s\n", file_name);
       stage++;
       continue;
+    }
 
-    case 2: /* get the file length and open it for writing */
+    case GET_LEN: {
       if (parse_long(line, "len", &file_len) == -1) {
         break;
       }
+
       if ((fp = fopen(file_name, "w+")) == NULL) {
         break;
       }
+
       v("Len: %ld\n", file_len);
       stage++;
       continue;
+    }
 
-    case 3: /* write the file */
+    case GET_DATA: {
       counter += read;
+
       if (counter > file_len) {
         warnx("File bigger than expected");
         break;
       }
+
       if (fwrite(line, sizeof(char), (size_t)read, fp) != (size_t)read) {
         warn("fwrite");
         break;
       }
+
       v("Written: %ld of %ld\n", counter, file_len);
+
       if (counter == file_len) {
-        stage = 1;
+        stage = GET_FILE;
         counter = 0;
+
         if (fclose(fp) == EOF) {
           warn("fclose");
           fp = NULL;
@@ -278,19 +292,36 @@ static int response(FILE *read_fd) {
         fp = NULL;
       }
       continue;
+    }
 
     default:
       break;
     }
 
-    warnx("Could not process the server response");
+    warnx("Could not process the response");
     status = -1;
     break;
+  }
+
+  if (read == -1) {
+    if (errno != 0) {
+      warn("getline");
+      status = -1;
+    }
+    if (counter < file_len) {
+      warnx("Response interrupted");
+      status = -1;
+    }
+    if (stage == GET_STATUS) {
+      warnx("Got an empty response");
+      status = -1;
+    }
   }
 
   if (fp != NULL) {
     if (fclose(fp) == EOF) {
       warn("fclose");
+      status = -1;
     }
   }
 
@@ -310,7 +341,7 @@ static int response(FILE *read_fd) {
  *
  * @returns 0 if everything went well or -1 in case of error
  */
-int parse_string(char *line, const char *key, char *result) {
+static int parse_string(char *line, const char *key, char *result, const size_t result_len) {
   char *value;
 
   if (strcmp(strtok(line, "="), key) == 0) {
@@ -320,7 +351,7 @@ int parse_string(char *line, const char *key, char *result) {
       return -1;
     }
 
-    if (strlen(value) >= strlen(result) - 1) {
+    if (strlen(value) >= result_len - 1) {
       warnx("%s value too long", key);
       return -1;
     }
@@ -342,7 +373,7 @@ int parse_string(char *line, const char *key, char *result) {
  *
  * @returns 0 if everything went well or -1 in case of error
  */
-int parse_long(char *line, const char *key, long *result) {
+static int parse_long(char *line, const char *key, long *result) {
   char *value;
   char *notconv;
 
