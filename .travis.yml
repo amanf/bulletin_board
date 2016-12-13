@@ -25,11 +25,14 @@ addons:
 matrix:
   include:
     - compiler: gcc
-      env: CFLAGS='-std=gnu99'
+      env: CFLAGS='-std=gnu99 -coverage'
     - compiler: gcc-6
       env: CFLAGS='-std=gnu11'
     - compiler: clang
-      env: CFLAGS='-std=gnu11 -Weverything -coverage'
+      env: CFLAGS='-std=gnu11 -Weverything'
+
+before_script:
+  - pip install --user cpp-coveralls
 
 script:
   - mkdir build
@@ -38,9 +41,9 @@ script:
   - cmake --build .
 
 after_success:
-  # codecov
-  - if [ "$CC" == "clang" ]; then
-      bash <(curl -s https://codecov.io/bash)
+  # coveralls
+  - if [ "$CC" == "gcc" ]; then
+      ~/.local/bin/coveralls
     fi
   # coverity
   - cd $TRAVIS_BUILD_DIR
