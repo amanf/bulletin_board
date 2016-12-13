@@ -38,6 +38,8 @@ script:
   - cmake --build .
 
 after_success:
+  # codecov
+  - bash <(curl -s https://codecov.io/bash)
   # coverity
   - cd $TRAVIS_BUILD_DIR
   - if ([ "$CC" == "gcc" ] && [ "$TRAVIS_BRANCH" == "coverity_scan" ]); then
