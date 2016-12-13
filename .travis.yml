@@ -25,14 +25,11 @@ addons:
 matrix:
   include:
     - compiler: gcc
-      env: CFLAGS='-std=gnu99 -coverage'
+      env: CFLAGS='-std=gnu99'
     - compiler: gcc-6
       env: CFLAGS='-std=gnu11'
     - compiler: clang
       env: CFLAGS='-std=gnu11 -Weverything'
-
-before_script:
-  - pip install --user cpp-coveralls
 
 script:
   - mkdir build
@@ -41,10 +38,6 @@ script:
   - cmake --build .
 
 after_success:
-  # coveralls
-  - if [ "$CC" == "gcc" ]; then
-      ~/.local/bin/coveralls
-    fi
   # coverity
   - cd $TRAVIS_BUILD_DIR
   - if ([ "$CC" == "gcc" ] && [ "$TRAVIS_BRANCH" == "coverity_scan" ]); then
