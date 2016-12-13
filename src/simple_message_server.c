@@ -206,6 +206,7 @@ static int accept_connections(int sock) {
 
     case -1: /* error */
       warn("fork");
+      close(accept_sock);
       break;
 
     case 0: /* child */
