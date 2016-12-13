@@ -283,6 +283,7 @@ static int response(FILE *read_fd) {
       if (counter == file_len) {
         stage = GET_FILE;
         counter = 0;
+        file_len = 0;
 
         if (fclose(fp) == EOF) {
           warn("fclose");
