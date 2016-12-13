@@ -4,6 +4,8 @@ project(bulletin_board C)
 find_package(Doxygen)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wstrict-prototypes -pedantic")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} -g -O0 -coverage")
+set(CMAKE_EXE_LINKER_FLAGS="-coverage")
 
 include_directories(lib/libsimple_message_client_commandline_handling)
 include_directories(lib/simple_message_server_logic)
