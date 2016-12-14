@@ -173,8 +173,8 @@ static int request(FILE *write_fd, int sock, const char *user, const char *messa
   const char *message_p = "\n";
   const char *img_url_p = (img_url[0] != '\0') ? "\nimg=" : "";
 
-  size_t length = strlen(user_p) + strlen(img_url_p) + strlen(message_p) + strlen(user) + strlen(img_url) +
-                  strlen(message) + 1;
+  size_t length = strlen(user_p) + strlen(img_url_p) + strlen(message_p) +
+                  strlen(user) + strlen(img_url) + strlen(message) + 1;
 
   char *request = calloc(length, sizeof(char));
 
@@ -198,7 +198,7 @@ static int request(FILE *write_fd, int sock, const char *user, const char *messa
     return -1;
   }
 
-  if (shutdown(sock, SHUT_WR)) {
+  if (shutdown(sock, SHUT_WR) == -1) {
     warn("shutdown");
     free(request);
     return -1;
@@ -227,6 +227,7 @@ static int response(FILE *read_fd) {
   size_t len = 0;
   FILE *fp = NULL;
 
+  errno = 0;
   while ((read = getline(&line, &len, read_fd)) != -1) {
 
     switch (stage) {
@@ -339,12 +340,13 @@ static int response(FILE *read_fd) {
  * @param line the string to parse
  * @param key the key to search for
  * @param result where to store the value of the key
- * @param result_len the length of the result buffer
+ * @param result_len the length of the buffer
  *
  * @returns 0 if everything went well or -1 in case of error
  */
 static int parse_string(char *line, const char *key, char *result, const size_t result_len) {
   char *value;
+  size_t value_len;
 
   if (strcmp(strtok(line, "="), key) == 0) {
 
@@ -353,12 +355,14 @@ static int parse_string(char *line, const char *key, char *result, const size_t 
       return -1;
     }
 
-    if (strlen(value) >= result_len - 1) {
+    value_len = strlen(value);
+    if (value_len >= result_len - 1) {
       warnx("%s value too long", key);
       return -1;
     }
 
-    strcpy(result, value);
+    strncpy(result, value, value_len);
+    result[value_len] = '\0';
 
     return 0;
   }
@@ -386,6 +390,7 @@ static int parse_long(char *line, const char *key, long *result) {
       return -1;
     }
 
+    errno = 0;
     *result = strtol(value, &notconv, 10);
     if (errno != 0 || *notconv != '\0') {
       warn("strtol");
