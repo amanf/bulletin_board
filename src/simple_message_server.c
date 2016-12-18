@@ -1,5 +1,6 @@
 #include <err.h>
 #include <errno.h>
+#include <getopt.h>
 #include <netdb.h>
 #include <signal.h>
 #include <stdio.h>
@@ -9,6 +10,12 @@
 #include <unistd.h>
 
 #define SERVER_LOGIC_PATH "/usr/local/bin/simple_message_server_logic"
+
+#define v(fmt, ...)                                                                                          \
+  if (verbose)                                                                                               \
+    fprintf(stderr, "%s(): " fmt, __func__, __VA_ARGS__);
+
+static int verbose = 0;
 
 static int parse_params(int argc, char *argv[], char *port[]);
 static int init_sock(char *port);
@@ -29,9 +36,10 @@ int main(int argc, char *argv[]) {
 
   if (parse_params(argc, argv, &port) == -1) {
     /* error is printed by parse_params() */
-    fprintf(stderr, "Usage: %s -p port [-h]\n", argv[0]);
+    fprintf(stderr, "Usage: %s -p port [-v] [-h]\n", argv[0]);
     return EXIT_FAILURE;
   }
+  v("port: %s\n", port);
 
   if ((sock = init_sock(port)) == -1) {
     /* error is printed by init_sock() */
@@ -43,9 +51,11 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
+  /* not reached */
+
   close(sock);
 
-  return 0;
+  return EXIT_SUCCESS;
 }
 
 /**
@@ -62,12 +72,19 @@ static int parse_params(int argc, char *argv[], char *port[]) {
   long port_num;
   char *notconv;
 
+  struct option long_options[] = {
+      {"port", 1, NULL, 'p'},
+      {"verbose", 0, NULL, 'v'},
+      {"help", 0, NULL, 'h'},
+      {0, 0, 0, 0}
+  };
+
   if (argc < 2) {
     warnx("Arguments missing");
     return -1;
   }
 
-  while ((opt = getopt(argc, argv, "p:h")) != -1) {
+  while ((opt = getopt_long(argc, argv, "p:vh", long_options, NULL)) != -1) {
     switch (opt) {
 
     case 'p':
@@ -83,11 +100,15 @@ static int parse_params(int argc, char *argv[], char *port[]) {
       *port = optarg;
       break;
 
+    case 'v':
+      verbose = 1;
+      break;
+
     case 'h':
       return -1;
 
     default:
-      /* error is printed by getopt() */
+      /* error is printed by getopt_long() */
       return -1;
     }
   }
@@ -111,6 +132,7 @@ static int init_sock(char *port) {
   int sock = -1;
   struct addrinfo hints;
   struct addrinfo *info, *p;
+  int addr_status;
   const int reuseaddr = 1;
 
   /* get the address info */
@@ -119,8 +141,12 @@ static int init_sock(char *port) {
   hints.ai_socktype = SOCK_STREAM; /* TCP */
   hints.ai_flags = AI_PASSIVE;     /* Wildcard IP */
 
-  if (getaddrinfo(NULL, port, &hints, &info) != 0) {
-    warn("getaddrinfo");
+  if ((addr_status = getaddrinfo(NULL, port, &hints, &info)) != 0) {
+    if (addr_status == EAI_SYSTEM) {
+      warn("getaddrinfo");
+    } else {
+      warnx("getaddrinfo(): %s", gai_strerror(addr_status));
+    }
     return -1;
   }
 
@@ -158,6 +184,7 @@ static int init_sock(char *port) {
 
   freeaddrinfo(info);
 
+  v("%s\n", "bind() successful");
   return sock;
 }
 
@@ -177,7 +204,7 @@ static int accept_connections(int sock) {
   struct sigaction sa;
   sa.sa_handler = sigchild_handler;
   sigemptyset(&sa.sa_mask);
-  sa.sa_flags = SA_RESTART;
+  sa.sa_flags = SA_RESTART; /* resume library functions after the handler */
 
   if (sigaction(SIGCHLD, &sa, NULL) == -1) {
     warn("sigaction");
@@ -185,13 +212,16 @@ static int accept_connections(int sock) {
     return -1;
   }
 
+  /* mark the socket as passive with a maximum backlog allowed by OS */
   if (listen(sock, SOMAXCONN) == -1) {
     warn("listen");
     close(sock);
     return -1;
   }
+  v("%s\n", "Listening...");
 
   while (1) {
+    v("%s\n", "Waiting for connections...");
     if ((accept_sock = accept(sock, (struct sockaddr *)&addr, &addr_size)) == -1) {
       if (errno == EAGAIN || errno == EWOULDBLOCK) {
         continue;
@@ -201,6 +231,7 @@ static int accept_connections(int sock) {
         return -1;
       }
     }
+    v("%s\n", "Accepted a connection");
 
     switch (fork()) {
 
@@ -230,6 +261,8 @@ static int accept_connections(int sock) {
       break;
     }
   }
+
+  /* not reached */
 
   return 0;
 }
