@@ -110,6 +110,7 @@ static int connection(const char *server, const char *port) {
   int sock = -1;
   struct addrinfo hints;
   struct addrinfo *info, *p;
+  int addr_status;
 
   /* get the address info */
   memset(&hints, 0, sizeof(hints));
@@ -117,8 +118,12 @@ static int connection(const char *server, const char *port) {
   hints.ai_socktype = SOCK_STREAM; /* TCP */
   hints.ai_flags = AI_ADDRCONFIG;  /* Only use families present locally */
 
-  if (getaddrinfo(server, port, &hints, &info) != 0) {
-    warn("getaddrinfo");
+  if ((addr_status = getaddrinfo(server, port, &hints, &info)) != 0) {
+    if (addr_status == EAI_SYSTEM) {
+      warn("getaddrinfo");
+    } else {
+      warnx("getaddrinfo(): %s", gai_strerror(addr_status));
+    }
     return -1;
   }
 
@@ -234,12 +239,12 @@ static int response(FILE *read_fd) {
 
     case GET_STATUS: {
       if (parse_long(line, "status", &status) == -1) {
-        break;
+        break; /* quit the switch to "Could not process the response" */
       }
 
       v("Status: %ld\n", status);
       stage++;
-      continue;
+      continue; /* continue the while loop */
     }
 
     case GET_FILE: {
@@ -340,7 +345,7 @@ static int response(FILE *read_fd) {
  * @param line the string to parse
  * @param key the key to search for
  * @param result where to store the value of the key
- * @param result_len the length of the buffer
+ * @param result_len the length of the result buffer
  *
  * @returns 0 if everything went well or -1 in case of error
  */
@@ -348,8 +353,12 @@ static int parse_string(char *line, const char *key, char *result, const size_t 
   char *value;
   size_t value_len;
 
+  /* key=value\n */
+
+  /* compare key */
   if (strcmp(strtok(line, "="), key) == 0) {
 
+    /* get value */
     if ((value = strtok(NULL, "\n")) == NULL) {
       warn("strtok");
       return -1;
@@ -383,8 +392,12 @@ static int parse_long(char *line, const char *key, long *result) {
   char *value;
   char *notconv;
 
+  /* key=value\n */
+
+  /* compare key */
   if (strcmp(strtok(line, "="), key) == 0) {
 
+    /* get value */
     if ((value = strtok(NULL, "\n")) == NULL) {
       warn("strtok");
       return -1;
